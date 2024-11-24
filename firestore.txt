@@ -1,0 +1,205 @@
+Upload Image With Text To Firebase Storage
+
+//AndroidManifest.xml
+
+<uses-permission android:name="android.permission.INTERNET"/>
+
+
+//Layout designing
+
+ <ImageView
+      android:id="@+id/image_view"
+      android:layout_width="match_parent"
+      android:layout_height="300dp" />
+
+  <EditText
+      android:id="@+id/txtdata"
+      android:layout_width="302dp"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="50dp"
+      android:layout_marginLeft="50dp"
+      android:layout_marginTop="320dp"
+      android:layout_marginBottom="50dp"
+      android:gravity="center" />
+
+  <Button
+      android:id="@+id/btnbrowse"
+      android:layout_width="214dp"
+      android:layout_height="64dp"
+      android:layout_marginTop="370dp"
+      android:text="Browse" />
+
+  <Button
+      android:id="@+id/btnupload"
+      android:layout_width="194dp"
+      android:layout_height="61dp"
+      android:layout_marginLeft="220dp"
+      android:layout_marginTop="370dp"
+      android:text="Upload" />
+
+
+
+//To import in main Java class
+
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.webkit.MimeTypeMap;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.Toast;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import java.io.IOException;
+
+
+
+
+//Declrations
+
+    Button btnbrowse, btnupload;
+    EditText txtdata ;
+    ImageView imgview;
+    Uri FilePathUri;
+    StorageReference storageReference;
+    DatabaseReference databaseReference;
+    int Image_Request_Code = 7;
+    ProgressDialog progressDialog ;
+
+
+
+
+//Defining in oncreate()
+
+storageReference = FirebaseStorage.getInstance().getReference("Images");
+        databaseReference = FirebaseDatabase.getInstance().getReference("Images");
+        btnbrowse = (Button)findViewById(R.id.btnbrowse);
+        btnupload= (Button)findViewById(R.id.btnupload);
+        txtdata = (EditText)findViewById(R.id.txtdata);
+        imgview = (ImageView)findViewById(R.id.image_view);
+        progressDialog = new ProgressDialog(MainActivity.this);// context name as per your project name
+
+
+ btnbrowse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent();
+                intent.setType("image/*");
+                intent.setAction(Intent.ACTION_GET_CONTENT);
+                startActivityForResult(Intent.createChooser(intent, "Select Image"), Image_Request_Code);
+
+            }
+        });
+        btnupload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+
+                UploadImage();
+
+            }
+        });
+
+
+
+
+//Out side of Oncreate()
+
+ @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == Image_Request_Code && resultCode == RESULT_OK && data != null && data.getData() != null) {
+
+            FilePathUri = data.getData();
+
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), FilePathUri);
+                imgview.setImageBitmap(bitmap);
+            }
+            catch (IOException e) {
+
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public String GetFileExtension(Uri uri) {
+
+        ContentResolver contentResolver = getContentResolver();
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+        return mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(uri)) ;
+
+    }
+
+
+    public void UploadImage() {
+
+        if (FilePathUri != null) {
+
+            progressDialog.setTitle("Image is Uploading...");
+            progressDialog.show();
+            StorageReference storageReference2 = storageReference.child(System.currentTimeMillis() + "." + GetFileExtension(FilePathUri));
+            storageReference2.putFile(FilePathUri)
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+
+                            String TempImageName = txtdata.getText().toString().trim();
+                            progressDialog.dismiss();
+                            Toast.makeText(getApplicationContext(), "Image Uploaded Successfully ", Toast.LENGTH_LONG).show();
+                            @SuppressWarnings("VisibleForTests")
+                            uploadinfo imageUploadInfo = new uploadinfo(TempImageName, taskSnapshot.getUploadSessionUri().toString());
+                            
+                            String ImageUploadId = databaseReference.push().getKey();
+                            
+                            databaseReference.child(ImageUploadId).setValue(imageUploadInfo);
+                        }
+                    });
+        }
+        else {
+
+            Toast.makeText(MainActivity.this, "Please Select Image or Add Image Name", Toast.LENGTH_LONG).show();
+
+        }
+    }
+
+
+
+
+//Create uplodinfo class and write
+
+public class uploadinfo {
+
+        public String imageName;
+        public String imageURL;
+        public uploadinfo(){}
+
+        public uploadinfo(String name, String url) {
+            this.imageName = name;
+            this.imageURL = url;
+        }
+
+        public String getImageName() {
+            return imageName;
+        }
+        public String getImageURL() {
+            return imageURL;
+        }
+    }
