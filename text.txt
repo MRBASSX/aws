@@ -32,6 +32,13 @@ pipelines:
     - step:
         name: 'Deployment to Production'
         deployment: production
+        trigger: 'manual'
+        script:
+          - echo "Your deployment to production script goes here..."
+
+
+
+
 
 
 
@@ -56,6 +63,3 @@ git commit -m "Add existing project files to Git"
 git remote add origin https://github.com/MRBASSX/Softwarelevels.git
 git push -u -f origin master
 
-        trigger: 'manual'
-        script:
-          - echo "Your deployment to production script goes here..."
