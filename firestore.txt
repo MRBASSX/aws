@@ -203,3 +203,69 @@ public class uploadinfo {
             return imageURL;
         }
     }
+
+
+
+
+
+Retrieve images and text from firebase  
+    
+    
+    
+ Class Food {
+   public String name;
+   public String Image;
+   public String description;
+
+   public String getName() {
+       return name;
+   }
+   public String getImage() {
+       return image;
+   }
+   public String getDescription() {
+       return description;
+   }
+}
+
+
+Firebase db = FirebaseDatabase.getInstance().getReference("foods");
+
+mPostReference.addValueEventListener(new ValueEventListener() {
+    @Override
+    public void onDataChange(DataSnapshot dataSnapshot) {
+        // Get Post object and use the values to update the UI
+        Food food = dataSnapshot.getValue(Food.class);
+        ArrayList<Food> foodsList = new ArrayList<>();
+
+       foodsList.add(food);
+        // ...
+    }
+
+    @Override
+    public void onCancelled(DatabaseError databaseError) {
+        // Getting Post failed, log a message
+        Log.w(TAG, "loadPost:onCancelled", databaseError.toException());
+        // ...
+    }
+    
+});
+
+
+set Image using Glide or picaso
+
+ImageView imageView = (ImageView) findViewById(R.id.my_image_view);
+Glide.with(this).load(foodsList.get(index).getImage()).into(imageView);
+
+
+
+
+
+
+
+
+
+
+
+
+
